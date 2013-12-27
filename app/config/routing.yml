@@ -1,0 +1,4 @@
+real_real_estate:
+    resource: "@RealRealEstateBundle/Resources/config/routing.yml"
+    prefix:   /
+
