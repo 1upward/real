@@ -1,4 +1,4 @@
-CREATE  TABLE `realestate`.`property` (
+CREATE  TABLE `property` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `address1` VARCHAR(1024) NOT NULL ,
   `address2` VARCHAR(1024) NULL ,
@@ -20,3 +20,6 @@ CREATE TABLE zipcodes
   last_imported DATETIME
 );
 CREATE UNIQUE INDEX unique_zipcode ON zipcodes ( zipcode );
+
+ALTER TABLE `property` ADD COLUMN `zpid` VARCHAR(45) NOT NULL  AFTER `zestimate_high`
+, ADD UNIQUE INDEX `zpid_UNIQUE` (`zpid` ASC) ;
