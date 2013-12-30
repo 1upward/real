@@ -10,4 +10,5 @@
 /bin/
 /composer.phar
 /.idea/*
-.idea/workspace.xml
+.idea
+/.idea

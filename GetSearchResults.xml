@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SearchResults:searchresults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.zillow.com/static/xsd/SearchResults.xsd http://www.zillowstatic.com/vstatic/20a043fb11f5a3d5b7d1af11a6bfa8ab/static/xsd/SearchResults.xsd" xmlns:SearchResults="http://www.zillow.com/static/xsd/SearchResults.xsd">
+<request>
+	<address>61 Brimstone Rd</address>
+	<citystatezip>04453</citystatezip>
+</request>
+<message>
+	<text>Request successfully processed</text>
+	<code>0</code>
+</message>
+<response>
+	<results>
+		<result>
+			<zpid>2112057315</zpid>
+			<links>
+				<homedetails>http://www.zillow.com/homedetails/61-Brimstone-Rd-Lagrange-ME-04453/2112057315_zpid/</homedetails>
+				<mapthishome>http://www.zillow.com/homes/2112057315_zpid/</mapthishome>
+				<comparables>http://www.zillow.com/homes/comps/2112057315_zpid/</comparables>
+			</links>
+			<address>
+				<street>61 Brimstone Rd</street>
+				<zipcode>04453</zipcode>
+				<city>Lagrange</city>
+				<state>ME</state>
+				<latitude>45.195496</latitude>
+				<longitude>-68.859246</longitude>
+			</address>
+			<zestimate>
+				<amount currency="USD"></amount>
+				<last-updated>12/31/1969</last-updated>
+				<oneWeekChange deprecated="true"></oneWeekChange>
+				<valueChange></valueChange>
+				<valuationRange>
+					<low currency="USD"></low>
+					<high currency="USD"></high>
+				</valuationRange>
+				<percentile>0</percentile>
+			</zestimate>
+			<rentzestimate>
+				<amount currency="USD">737</amount>
+				<last-updated>12/23/2013</last-updated>
+				<oneWeekChange deprecated="true"></oneWeekChange>
+				<valueChange></valueChange>
+				<valuationRange>
+					<low currency="USD">634</low>
+					<high currency="USD">1047</high>
+				</valuationRange>
+			</rentzestimate>
+			<localRealEstate>
+				<region id="28628" type="city" name="Lagrange">
+					<links>
+						<overview>http://www.zillow.com/local-info/ME-Lagrange/r_28628/</overview>
+						<forSaleByOwner>http://www.zillow.com/lagrange-me/fsbo/</forSaleByOwner>
+						<forSale>http://www.zillow.com/lagrange-me/</forSale>
+					</links>
+				</region>
+			</localRealEstate>
+		</result>
+	</results>
+</response>
+</SearchResults:searchresults>
+<!-- H:003  T:30ms  S:1093  R:Mon Dec 30 13:40:44 PST 2013  B:3.0.215396.20131223191247490-comp_rel_a.215396.20131223191631733-comp_rel_a -->
