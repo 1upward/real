@@ -10,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 use Sunra\PhpSimple\HtmlDomParser;
 use Symfony\Component\DependencyInjection\SimpleXMLElement;
+use Doctrine\DBAL\Connection;
 
 class CrawlCommand extends ContainerAwareCommand
 {
@@ -67,6 +68,24 @@ class CrawlCommand extends ContainerAwareCommand
             $details['price'] = $webDetails['price'];
 
             $output->writeln("[$zip] url=$url,address=$address,citystatezip=$zip,details=" . json_encode($details));
+
+            // store to DB
+            /** @var Connection $db */
+            $db = $this->getContainer()->get("database_connection");
+            $query = $db->prepare("REPLACE INTO property (address1, city, state, zip, price, rent_zestimate, rent_zestimate_low, rent_zestimate_high, zestimate_low, zestimate_high, zpid) VALUES
+            (:address1, :city, :state, :zip, :price, :rent_zestimate, :rent_zestimate_low, :rent_zestimate_high, :zestimate_low, :zestimate_high, :zpid)");
+            $query->bindParam(':address1', $details['address1']);
+            $query->bindParam(':city', $details['city']);
+            $query->bindParam(':state', $details['state']);
+            $query->bindParam(':zip', $details['zip']);
+            $query->bindParam(':price', $details['price']);
+            $query->bindParam(':rent_zestimate', $details['rent_zestimate']);
+            $query->bindParam(':rent_zestimate_low', $details['rent_zestimate_low']);
+            $query->bindParam(':rent_zestimate_high', $details['rent_zestimate_high']);
+            $query->bindParam(':zestimate_low', $details['zestimate_low']);
+            $query->bindParam(':zestimate_high', $details['zestimate_high']);
+            $query->bindParam(':zpid', $details['zpid']);
+            $query->execute();
         }
 
 
