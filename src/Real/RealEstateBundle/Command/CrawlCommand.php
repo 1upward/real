@@ -43,53 +43,71 @@ class CrawlCommand extends ContainerAwareCommand
         $searchBase = 'http://www.zillow.com/homes/';
         $searchUrl = $searchBase . $zip . '_rb/';
 
-        $ch = curl_init($searchUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
+        $output->writeln("URL=" . $searchUrl);
 
-        $properties = $this->extractProperties($result);
+        // start at the beginning and paginate
+        $page = 0;
 
-        $base = 'http://www.zillow.com/webservice/GetSearchResults.htm';
-        foreach ($properties as $property) {
-            $address = urlencode($property['address']);
-            $zip = urlencode($property['citystatezip']);
+        do {
+            $page++;
 
-            $url = $base . '?zws-id=' . $this->zwsId . "&address=$address&citystatezip=$zip&rentzestimate=true";
-            $ch = curl_init($url);
+            $ch = curl_init($searchUrl . '/' . $page . '_p/');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $detailResult = curl_exec($ch);
-            $details = $this->extractDetails($detailResult);
+            $result = curl_exec($ch);
 
-            $url = 'http://www.zillow.com/homes/' . str_replace(' ', '-', $property['address']) . '-' . $zip . '_rb/';
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $webDetailResult = curl_exec($ch);
-            $webDetails = $this->extractDetailsFromWeb($webDetailResult);
-            $details['price'] = $webDetails['price'];
+            $properties = $this->extractProperties($result);
 
-            $output->writeln("[$zip] url=$url,address=$address,citystatezip=$zip,details=" . json_encode($details));
+            $base = 'http://www.zillow.com/webservice/GetSearchResults.htm';
+            foreach ($properties as $property) {
+                // skip undisclosed addresses for now
+                if (strpos($property['address'], '(undisclosed') !== false)
+                    continue;
 
-            // store to DB
-            /** @var Connection $db */
-            $db = $this->getContainer()->get("database_connection");
-            $query = $db->prepare("REPLACE INTO property (address1, city, state, zip, price, rent_zestimate, rent_zestimate_low, rent_zestimate_high, zestimate_low, zestimate_high, zpid) VALUES
-            (:address1, :city, :state, :zip, :price, :rent_zestimate, :rent_zestimate_low, :rent_zestimate_high, :zestimate_low, :zestimate_high, :zpid)");
-            $query->bindParam(':address1', $details['address1']);
-            $query->bindParam(':city', $details['city']);
-            $query->bindParam(':state', $details['state']);
-            $query->bindParam(':zip', $details['zip']);
-            $query->bindParam(':price', $details['price']);
-            $query->bindParam(':rent_zestimate', $details['rent_zestimate']);
-            $query->bindParam(':rent_zestimate_low', $details['rent_zestimate_low']);
-            $query->bindParam(':rent_zestimate_high', $details['rent_zestimate_high']);
-            $query->bindParam(':zestimate_low', $details['zestimate_low']);
-            $query->bindParam(':zestimate_high', $details['zestimate_high']);
-            $query->bindParam(':zpid', $details['zpid']);
-            $query->execute();
-        }
+                $address = urlencode($property['address']);
+                $address = str_replace('&amp;', '&', $address);
+                $zip = urlencode($property['citystatezip']);
 
+                $url = $base . '?zws-id=' . $this->zwsId . "&address=$address&citystatezip=$zip&rentzestimate=true";
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                $detailResult = curl_exec($ch);
+                $details = $this->extractDetails($detailResult);
+
+                $url = 'http://www.zillow.com/homes/' . str_replace(' ', '-', str_replace(" #", '', $property['address'])) . '-' . $zip . '_rb/';
+                $output->writeln("url=" . $url);
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                $webDetailResult = curl_exec($ch);
+                $webDetails = $this->extractDetailsFromWeb($webDetailResult);
+                $details['price'] = $webDetails['price'];
+
+                $output->writeln("[$zip] url=$url,address=$address,citystatezip=$zip,details=" . json_encode($details));
+
+                // store to DB
+                $this->storeProperty($details);
+            }
+        } while (count($properties) > 0);
 
         $output->writeln("[" . $zip . '] Completed crawl');
+    }
+
+    public function storeProperty($details) {
+        /** @var Connection $db */
+        $db = $this->getContainer()->get("database_connection");
+        $query = $db->prepare("REPLACE INTO property (address1, city, state, zip, price, rent_zestimate, rent_zestimate_low, rent_zestimate_high, zestimate_low, zestimate_high, zpid) VALUES
+            (:address1, :city, :state, :zip, :price, :rent_zestimate, :rent_zestimate_low, :rent_zestimate_high, :zestimate_low, :zestimate_high, :zpid)");
+        $query->bindParam(':address1', $details['address1']);
+        $query->bindParam(':city', $details['city']);
+        $query->bindParam(':state', $details['state']);
+        $query->bindParam(':zip', $details['zip']);
+        $query->bindParam(':price', $details['price']);
+        $query->bindParam(':rent_zestimate', $details['rent_zestimate']);
+        $query->bindParam(':rent_zestimate_low', $details['rent_zestimate_low']);
+        $query->bindParam(':rent_zestimate_high', $details['rent_zestimate_high']);
+        $query->bindParam(':zestimate_low', $details['zestimate_low']);
+        $query->bindParam(':zestimate_high', $details['zestimate_high']);
+        $query->bindParam(':zpid', $details['zpid']);
+        $query->execute();
     }
 
     /**
@@ -128,6 +146,7 @@ class CrawlCommand extends ContainerAwareCommand
             'state' => '',
             'zip' => '',
             'price' => 0,
+            'rentPrice' => 0,
             'rent_zestimate' => 0,
             'rent_zestimate_low' => 0,
             'rent_zestimate_high' => 0,
@@ -138,7 +157,7 @@ class CrawlCommand extends ContainerAwareCommand
 
         $rawdata = $dom->find('dt.price-large');
         foreach ( $rawdata as $data ) {
-            $details['price'] = str_replace('$', '', str_replace(',', '', $data->plaintext)) * 100;
+            $details['price'] = trim(str_replace('$', '', str_replace(',', '', $data->plaintext)));
         }
 
         return $details;
@@ -152,6 +171,7 @@ class CrawlCommand extends ContainerAwareCommand
             'state' => '',
             'zip' => '',
             'price' => 0,
+            'rentPrice' => 0,
             'rent_zestimate' => 0,
             'rent_zestimate_low' => 0,
             'rent_zestimate_high' => 0,
@@ -168,9 +188,9 @@ class CrawlCommand extends ContainerAwareCommand
         $details['city'] = (string)$data->address->city;
         $details['state'] = (string)$data->address->state;
         $details['zip'] = (string)$data->address->zipcode;
-        $details['rent_zestimate'] = (string)$data->rentzestimate->amount;
-        $details['rent_zestimate_low'] = (string)$data->rentzestimate->valuationRange->low;
-        $details['rent_zestimate_high'] = (string)$data->rentzestimate->valuationRange->high;
+        $details['rent_zestimate'] = @(string)$data->rentzestimate->amount;
+        $details['rent_zestimate_low'] = @(string)$data->rentzestimate->valuationRange->low;
+        $details['rent_zestimate_high'] = @(string)$data->rentzestimate->valuationRange->high;
 
         return $details;
     }

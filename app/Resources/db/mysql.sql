@@ -23,3 +23,5 @@ CREATE UNIQUE INDEX unique_zipcode ON zipcodes ( zipcode );
 
 ALTER TABLE `property` ADD COLUMN `zpid` VARCHAR(45) NOT NULL  AFTER `zestimate_high`
 , ADD UNIQUE INDEX `zpid_UNIQUE` (`zpid` ASC) ;
+
+ALTER TABLE `property` ADD COLUMN `rentPrice` INT(11) NULL DEFAULT NULL  AFTER `price` ;
